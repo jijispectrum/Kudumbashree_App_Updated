@@ -57,11 +57,10 @@ class LoanRepaymentForm(forms.ModelForm):
         fields = ['installment_amount', 'next_due_date', 'last_payment_date']
 from django import forms
 from .models import CustomUser
+from django import forms
+from .models import CustomUser
 
 class CustomUserEditForm(forms.ModelForm):
     class Meta:
         model = CustomUser
-        fields = ['username', 'email', 'phone_number', 'address', 'aadhar', 'ration_card_number']
-        widgets = {
-            'address': forms.Textarea(attrs={'rows': 2}),
-        }
+        fields = ["username", "email", "phone_number", "address", "aadhar", "ration_card_number", "profile_picture"]

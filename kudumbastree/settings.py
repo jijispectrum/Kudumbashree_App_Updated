@@ -113,7 +113,14 @@ USE_I18N = True
 
 USE_TZ = True
 
+import os
 
+MEDIA_URL = "/media/"  # URL for accessing uploaded media
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")  # Directory where media files will be stored
+# For development, use this:
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'C:/Users/PYTHON/kudumbastree/kudumbastree/static'),
+]
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 

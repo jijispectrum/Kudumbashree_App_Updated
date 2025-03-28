@@ -5,23 +5,157 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Update Loan Installment</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg,rgb(58, 140, 218),rgb(191, 196, 206));
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            max-width: 550px;
+            margin: auto;
+            padding: 25px;
+            background: white;
+            transition: background 0.3s, color 0.3s;
+        }
+        .btn-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-toggle input {
+            width: 40px;
+            height: 20px;
+            appearance: none;
+            background: #ddd;
+            border-radius: 50px;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+            transition: background 0.3s;
+        }
+        .btn-toggle input:checked {
+            background: #222;
+        }
+        .btn-toggle input::before {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+        .btn-toggle input:checked::before {
+            transform: translateX(20px);
+        }
+        .form-label {
+            font-weight: bold;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background 0.3s, transform 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.02);
+        }
+        .btn-success {
+            background: #28a745;
+            border: none;
+        }
+        .btn-danger {
+            background: #dc3545;
+            border: none;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+        }
+        .dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        .dark-mode .card {
+            background: #1e1e1e;
+            color: #ffffff;
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+        }
+    </style>
 </head>
-<body class="container mt-5">
-    <h2>Update Loan Installment & Next Due Date</h2>
-    
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label class="form-label">Installment Amount</label>
-            {{ form.installment_amount }}
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Next Due Date</label>
-            {{ form.next_due_date }}
-        </div>
-        <button type="submit" class="btn btn-primary mt-3">Update Repayment</button>
-    </form>
+<body>
 
-    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mt-3">Back to Admin Dashboard</a>
+    <!-- Dark Mode Toggle -->
+    <label class="btn-toggle">
+        <span>🌞</span>
+        <input type="checkbox" id="darkModeToggle">
+        <span>🌙</span>
+    </label>
+
+    <div class="container mt-5">
+        <div class="card">
+            <h2 class="text-center mb-4">Update Loan Installment</h2>
+
+            <form method="post" onsubmit="return confirmSubmit()">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Installment Amount</label>
+                    {{ form.installment_amount }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Next Due Date</label>
+                    {{ form.next_due_date }}
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-success">✅ Update Repayment</button>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Delete Loan Button -->
+            <form method="post" onsubmit="return confirmDelete()">
+                {% csrf_token %}
+                <input type="hidden" name="delete_loan" value="1">
+                <div class="text-center">
+                    <button type="submit" class="btn btn-danger">⚠️ Delete Loan</button>
+                </div>
+            </form>
+
+            <div class="text-center mt-3">
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">⬅️ Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function confirmSubmit() {
+            return confirm("Are you sure you want to update this loan repayment?");
+        }
+
+        function confirmDelete() {
+            return confirm("⚠️ WARNING: This will permanently delete the loan. Do you want to proceed?");
+        }
+
+        // Dark Mode Toggle Logic
+        const toggle = document.getElementById('darkModeToggle');
+        toggle.addEventListener('change', () => {
+            document.body.classList.toggle("dark-mode");
+        });
+    </script>
+
 </body>
 </html>

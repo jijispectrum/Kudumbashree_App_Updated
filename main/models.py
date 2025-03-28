@@ -1,17 +1,22 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+
 class CustomUser(AbstractUser):
     age = models.IntegerField(null=True, blank=True, default=18)  # Default age
     address = models.TextField(null=True, blank=True)  # Allow empty addresses
-    aadhar = models.CharField(max_length=12, unique=True)
-    ration_card_number = models.CharField(max_length=20, unique=True)
-    phone_number = models.CharField(max_length=15, null=True, blank=True)  # Allow optional phone numbers
+    aadhar = models.CharField(max_length=12, unique=True)  # No validation
+    ration_card_number = models.CharField(max_length=20, unique=True)  # No validation
+    phone_number = models.CharField(max_length=15, null=True, blank=True)  # Optional phone number
     membership_status = models.CharField(
         max_length=20, 
         choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], 
         default='Pending'
     )
+    profile_picture = models.ImageField(upload_to="profile_pics/", blank=True, null=True)  # Allow image upload
+
 
 class Loan(models.Model):
     name = models.CharField(max_length=100)
@@ -81,8 +86,24 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.transaction_type} - ₹{self.amount}"
 
-# Attendance Model (Admin Marks Attendance)
+# # Attendance Model (Admin Marks Attendance)
+# class Attendance(models.Model):
+#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+#     date = models.DateField(auto_now_add=True)
+#     status = models.CharField(max_length=10, choices=[('Present', 'Present'), ('Absent', 'Absent')])
+from django.db import models
+from datetime import date
+from django.contrib.auth import get_user_model
+
+CustomUser = get_user_model()
+
 class Attendance(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=date.today)  # Default to today but allows editing
     status = models.CharField(max_length=10, choices=[('Present', 'Present'), ('Absent', 'Absent')])
+
+    class Meta:
+        unique_together = ('user', 'date')  # Prevent duplicate records for the same user and date
+
+    def __str__(self):
+        return f"{self.user.username} - {self.status} on {self.date}"

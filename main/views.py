@@ -107,7 +107,7 @@ def admin_dashboard(request):
         'attendance_records': attendance_records,
         'loan_repayments': loan_repayments
     })
-# Admin Approves Membership
+# # Admin Approves Membership
 @login_required
 @user_passes_test(is_admin)
 def approve_membership(request, user_id):
@@ -154,13 +154,38 @@ def reject_loan(request, loan_id):
     loan_request.save()
     return redirect('admin_dashboard')
 
-# Admin Marks Attendance
-@login_required
-@user_passes_test(is_admin)
+# # Admin Marks Attendance
+# @login_required
+# @user_passes_test(is_admin)
+# def mark_attendance(request, user_id, status):
+#     user = CustomUser.objects.get(id=user_id)
+#     Attendance.objects.create(user=user, status=status)
+#     return redirect('admin_dashboard')
+
+from django.shortcuts import get_object_or_404, redirect, render
+from .models import CustomUser, Attendance
+from datetime import datetime
+
 def mark_attendance(request, user_id, status):
-    user = CustomUser.objects.get(id=user_id)
-    Attendance.objects.create(user=user, status=status)
-    return redirect('admin_dashboard')
+    user = get_object_or_404(CustomUser, id=user_id)
+    
+    # Get selected date from request or default to today
+    date_str = request.GET.get('date', None)
+    if date_str:
+        selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    else:
+        selected_date = datetime.today().date()
+
+    # Mark attendance (update if exists)
+    attendance, created = Attendance.objects.get_or_create(
+        user=user, date=selected_date, defaults={'status': status}
+    )
+    if not created:
+        attendance.status = status
+        attendance.save()
+    
+    return redirect('admin_dashboard')  # Redirect to admin dashboard after marking
+
 
 # Admin Adds Transactions
 @login_required
@@ -200,14 +225,27 @@ def is_admin(user):
     return user.is_staff
 
 
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from datetime import date
+from .models import LoanRequest
+from .forms import LoanRepaymentForm
+
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def update_loan_repayment(request, loan_id):
-    """ Admin updates the repayment details, including due date and last payment date. """
+    """ Admin updates the repayment details and can delete the loan if needed. """
 
     loan_request = get_object_or_404(LoanRequest, id=loan_id)
 
     if request.method == "POST":
+        if "delete_loan" in request.POST:
+            # Admin chooses to delete the loan
+            loan_request.delete()
+            messages.success(request, "Loan successfully deleted.")
+            return redirect('admin_dashboard')
+
         form = LoanRepaymentForm(request.POST)
         if form.is_valid():
             installment = form.cleaned_data['installment_amount']
@@ -217,19 +255,14 @@ def update_loan_repayment(request, loan_id):
             # Update total repaid amount
             loan_request.total_repaid += installment
             
-            # Update next due date automatically or manually
-            if new_due_date:
-                loan_request.next_due_date = new_due_date
-            else:
-                loan_request.update_next_due_date()  # Auto update
+            # Update next due date
+            loan_request.next_due_date = new_due_date if new_due_date else loan_request.update_next_due_date()
 
-            # Update last payment date manually or set it automatically
-            if payment_date:
-                loan_request.last_payment_date = payment_date
-            else:
-                loan_request.last_payment_date = date.today()  # Default to today
+            # Update last payment date
+            loan_request.last_payment_date = payment_date if payment_date else date.today()
 
             loan_request.save()
+            messages.success(request, "Loan repayment details updated successfully.")
             return redirect('admin_dashboard')
 
     else:
@@ -239,7 +272,11 @@ def update_loan_repayment(request, loan_id):
             'last_payment_date': loan_request.last_payment_date
         })
 
-    return render(request, 'update_loan_repayment.html', {'form': form, 'loan_request': loan_request})
+    return render(request, 'update_loan_repayment.html', {
+        'form': form,
+        'loan_request': loan_request
+    })
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import CustomUser
@@ -271,3 +308,38 @@ def verify_and_edit_member(request, user_id):
         form = CustomUserEditForm(instance=user)
 
     return render(request, "verify_and_edit_member.html", {"form": form, "user": user})
+
+from django.shortcuts import render
+from .models import Transaction
+
+def admin_transactions(request):
+    transactions = Transaction.objects.all().order_by("-date")  # Show latest first
+    return render(request, "admin_transactions.html", {"transactions": transactions})
+from django.shortcuts import render
+from .models import Attendance
+
+def admin_attendance(request):
+    attendance_records = Attendance.objects.all().order_by("-date")  # Latest records first
+    return render(request, "admin_attendance.html", {"attendance_records": attendance_records})
+from django.shortcuts import render
+
+def home(request):
+    return render(request, 'home.html')
+
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
+
+def admin_login(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None and user.is_staff:  # Ensure user is an admin
+            login(request, user)
+            return redirect("admin_dashboard")  # Redirect to the admin dashboard
+        else:
+            messages.error(request, "Invalid credentials or insufficient privileges.")
+
+    return render(request, "admin_login.html")
